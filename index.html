@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .news-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+    .news-item h2 {
+      font-size: 18px;
+      color: #333;
+    }
+    .news-item p {
+      font-size: 14px;
+      color: #555;
+    }
+    .news-item a {
+      text-decoration: none;
+      color: #0066cc;
+    }
+    .news-item a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Latest News</h1>
+    <div id="news-list">
+      <p>Loading news...</p>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://newsdata.io/api/1/latest?apikey=pub_6284588c4834e9892b479f6464f7a34e5655d";
+    const CACHE_KEY = "news_cache";
+    const CACHE_EXPIRY_KEY = "news_cache_expiry";
+
+    async function fetchNews() {
+        const now = Date.now();
+        const cachedNews = localStorage.getItem(CACHE_KEY);
+        const cacheExpiry = localStorage.getItem(CACHE_EXPIRY_KEY);
+
+        if (cachedNews && cacheExpiry && now < parseInt(cacheExpiry, 10)) {
+            displayNews(JSON.parse(cachedNews));
+        } else {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("Failed to fetch news");
+
+                const data = await response.json();
+                displayNews(data.results);
+
+                // Cache the data and set expiry (30 minutes = 1200000 ms)
+                localStorage.setItem(CACHE_KEY, JSON.stringify(data.results));
+                localStorage.setItem(CACHE_EXPIRY_KEY, (now + 1200000).toString());
+            } catch (error) {
+                console.error("Error fetching news:", error);
+                document.getElementById("news-list").innerHTML = "<p>Failed to load news. Please try again later.</p>";
+            }
+        }
+    }
+
+    function displayNews(newsItems) {
+        const newsList = document.getElementById("news-list");
+        if (!newsItems || newsItems.length === 0) {
+            newsList.innerHTML = "<p>No news available.</p>";
+            return;
+        }
+
+        newsList.innerHTML = newsItems
+            .map(item => `
+                <div class="news-item">
+                    <h2>${item.title}</h2>
+                    <p>${item.description || "No description available."}</p>
+                    <a href="${item.link}" target="_blank">Read more</a>
+                </div>
+            `)
+            .join("");
+    }
+
+    fetchNews();
+  </script>
+</body>
+</html>
